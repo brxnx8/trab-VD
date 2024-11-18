@@ -1,6 +1,5 @@
-class Superstore{
-    constructor(data){
-
+class Superstore {
+    constructor(data) {
         this.RowID = data["Row ID"];
         this.OrderID = data["Order ID"];
         this.OrderDate = data["Order Date"];
@@ -25,50 +24,105 @@ class Superstore{
         this.Profit = data["Profit"];
         this.ShippingCost = data["Shipping Cost"];
         this.OrderPriority = data["Order Priority"];
+    }
+}
 
+class SuperstoreAnalisys {
+    constructor() {
+        this.bars = [];
+        this.width = 800;
+        this.height = 600;
+
+        this.createSvg();
     }
 
-} 
+    createSvg() {
+        this.svg = d3
+            .select("#main")
+            .append("svg")
+            .attr("x", 10)
+            .attr("y", 10)
+            .attr("width", this.width)
+            .attr("height", this.height);
+    }
+
+    createBars(data, attr) {
+        this.bars = data.map((d) => {
+            return {
+                height: +d[attr]/20,
+                lado: 30,
+            };
+        });
+    }
+
+    barsRender() {
+        this.svg
+            .selectAll("rect")
+            .data(this.bars)
+            .join("rect")
+            .attr("x", (data, i) => i * data.lado * 1.3)
+            .attr("y", (data) => this.height - data.height)
+            .attr("width", (data) => data.lado)
+            .attr("height", (data) => `${data.height}px`)
+            .style("fill", "steelblue");
+    }
+}
 
 class SuperstoreRepository {
     constructor() {
-            this.superstores = [];
+        this.superstores = [];
     }
 
     async loadData(path) {
-        try {
-            const response = await fetch(`${path}`);
-            const data = await response.json();
-            data.forEach(element => {
-                this.create(element)
-            });
-        } catch {
-            return {
-                id: path,
-                name: 'Não Encontrado',
-            };
-        }
-    };
-    
-    create(data) {
+        const response = await fetch(`${path}`);
+        const data = await response.json();
+        data.forEach((element) => {
+            this.createSuperstore(element);
+        });
+    }
+
+    createSuperstore(data) {
         const superstore = new Superstore(data);
 
         this.superstores.push(superstore);
     }
 
+    aggregation_count(attr_group) {
+        const dict_agg = {};
 
+        let data = [];
+
+        this.superstores.forEach((element) => {
+            if (!dict_agg[element[attr_group]]) {
+                dict_agg[element[attr_group]] = 1;
+            } else {
+                dict_agg[element[attr_group]] += 1;
+            }
+        });
+
+        for (const [key, value] of Object.entries(dict_agg)) {
+            data.push({
+                attr: key,
+                sum: value
+            });
+        }
+        console.log(data);
+        return data;
+    }
 }
 
-
 async function main() {
-    const data_path = './dataset/superstore.json'
+    const data_path = "./dataset/superstoreT.json";
 
-    let repository = new SuperstoreRepository();
-    
+    let app = new SuperstoreAnalisys();
+
+    const repository = new SuperstoreRepository();
+
     await repository.loadData(data_path);
 
-    console.log(repository.superstores[0])
+    app.createBars(repository.aggregation_count("Region"), "sum");
 
-  }
-  
-  main();
+    app.barsRender();
+}
+
+main();
