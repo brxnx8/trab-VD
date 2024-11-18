@@ -43,7 +43,7 @@ class SuperstoreAnalisys {
               this.bars = [];
           
               this.createSvg();
-            //   this.createMargins();
+              this.createMargins();
     }
 
     createSvg() {
@@ -54,6 +54,12 @@ class SuperstoreAnalisys {
             .attr('width', this.config.width + this.config.left + this.config.right)
             .attr('height', this.config.height + this.config.top + this.config.bottom)
     }
+
+    createMargins() {
+              this.margins = this.svg
+                .append('g')
+                .attr("transform", `translate(${this.config.left},${this.config.top})`)
+            }
 
 
 
@@ -70,7 +76,7 @@ class SuperstoreAnalisys {
 
     createScales(data, xRangeAttr, yRangeAttr) {
         
-        let yExtent = d3.sort(data, d => d['sum']).map(data => data['attr'])
+        let yExtent = d3.sort(data, d => d['sum']).map(data => data['label'])
   
         if(yRangeAttr != undefined){
             yExtent = d3.extent(data, d => {
@@ -85,15 +91,15 @@ class SuperstoreAnalisys {
         
         
         this.xScale = d3.scaleLinear().domain(xExtent).nice().range([this.config.left, this.config.width]);
-        this.yScale = d3.scaleBand().domain(yExtent).range([this.config.height, 0]).padding(0.1);
+        this.yScale = d3.scaleBand().domain(yExtent).rangeRound([this.config.height, this.config.top]).padding(0.1);
 
-        this.format = this.xScale.tickFormat(20, "%")
+        this.format = this.xScale.tickFormat(".2f", "%")
     
     }
     
     createAxis() {
         let xAxis = d3.axisBottom(this.xScale)
-        .ticks(15);
+        .ticks(10, '%');
     
         let yAxis = d3.axisLeft(this.yScale)
         .tickSizeOuter(0);
@@ -120,6 +126,22 @@ class SuperstoreAnalisys {
             .attr("width", (data) => this.xScale(data.sum) - this.xScale(0))
             .attr("height", this.yScale.bandwidth())
             .style("fill", "steelblue");
+
+            this.svg.append("g")
+            .attr("fill", "white")
+            .attr("text-anchor", "end")
+          .selectAll()
+          .data(this.bars)
+          .join("text")
+            .attr("x", (d) => this.xScale(d.sum))
+            .attr("y", (d) => this.yScale(d.label) + this.yScale.bandwidth() / 2)
+            .attr("dy", "0.35em")
+            .attr("dx", -4)
+            .text((d) => this.format(d.sum))
+          .call((text) => text.filter(d => this.xScale(d.sum) - this.xScale(0) < 50) // short bars
+            .attr("dx", +4)
+            .attr("fill", "black")
+            .attr("text-anchor", "start"));
     }
 }
 
@@ -158,7 +180,7 @@ class SuperstoreRepository {
         for (const [key, value] of Object.entries(dict_agg)) {
             data.push({
                 attr: key,
-                sum: (value/this.superstores.length) * 100
+                sum: (value/this.superstores.length)
             });
         }
         console.log(data)
@@ -168,7 +190,7 @@ class SuperstoreRepository {
 
 async function main() {
     const data_path = "./dataset/superstoreT.json";
-    let config = {div: '#main', width: 800, height: 600, top: 30, left: 80, bottom: 30, right: 30};
+    let config = {div: '#main', width: 800, height: 600, top: 60, left: 80, bottom: 60, right: 80};
 
     let app = new SuperstoreAnalisys(config);
 
@@ -178,7 +200,7 @@ async function main() {
 
     app.createBars(repository.aggregation_count("Region"), "sum");
 
-    app.createScales(repository.aggregation_count("Region"), "sum");
+    app.createScales(app.bars, "sum");
     
     app.createAxis();
 
@@ -187,115 +209,3 @@ async function main() {
 
 main();
 
-
-
-// class Eixos {
-//     constructor(config) {
-//       this.config = config;
-  
-//       this.svg = null;
-//       this.margins = null;
-  
-//       this.xScale = null;
-//       this.yScale = null;
-  
-//       this.circles = []
-  
-//       this.createSvg();
-//       this.createMargins();
-//     }
-  
-//     createSvg() {
-//       this.svg = d3.select(this.config.div)
-//         .append("svg")
-//         .attr('x', 10)
-//         .attr('y', 10)
-//         .attr('width', this.config.width + this.config.left + this.config.right)
-//         .attr('height', this.config.height + this.config.top + this.config.bottom);
-//     }
-  
-//     createMargins() {
-//       this.margins = this.svg
-//         .append('g')
-//         .attr("transform", `translate(${this.config.left},${this.config.top})`)
-//     }
-  
-//     async loadCSV(file) {
-//       this.circles = await d3.csv(file, d => {
-//         return {
-//           cx: +d.Sales,
-//           cy: +d.Profit,
-//           col: d.Discount,
-//           cat: d.Category,
-//           r: 4
-//         }
-//       });
-  
-//       this.circles = this.circles.slice(0, 1000);
-//     }
-  
-//     createScales() {
-//       let xExtent = d3.extent(this.circles, d => {
-//         return d.cx;
-//       });
-//       let yExtent = d3.extent(this.circles, d => {
-//         return d.cy;
-//       });
-//       let colExtent = d3.extent(this.circles, d => {
-//         return d.col;
-//       });
-  
-//       const cats = this.circles.map(d => {
-//         return d.cat;
-//       });
-//       let catExtent = d3.union(cats);
-  
-//       this.xScale = d3.scaleLinear().domain(xExtent).nice().range([0, this.config.width]);
-//       this.yScale = d3.scaleLinear().domain(yExtent).nice().range([this.config.height, 0]);
-  
-//       this.colScale = d3.scaleSequential(d3.interpolateOrRd).domain(colExtent);
-//       this.catScale = d3.scaleOrdinal().domain(catExtent).range(d3.schemeTableau10);
-//     }
-  
-//     createAxis() {
-//       let xAxis = d3.axisBottom(this.xScale)
-//         .ticks(15);
-  
-//       let yAxis = d3.axisLeft(this.yScale)
-//         .ticks(15);
-  
-//       this.margins
-//         .append("g")
-//         .attr("transform", `translate(0,${this.config.height})`)
-//         .call(xAxis);
-  
-//       this.margins
-//         .append("g")
-//         .call(yAxis);
-//     }
-  
-//     renderCircles() {
-//       this.margins.selectAll('circle')
-//         .data(this.circles)
-//         .join('circle')
-//         .attr('cx', d => this.xScale(d.cx))
-//         .attr('cy', d => this.yScale(d.cy))
-//         .attr('r' , d => d.r)
-//         .attr('fill', d => this.colScale(d.col))
-//         // .attr('fill', d => this.catScale(d.cat));
-//     }
-//   }
-  
-  
-//   async function main() {
-//     let c = {div: '#main', width: 800, height: 600, top: 30, left: 50, bottom: 30, right: 30};
-    
-//     let a = new Eixos(c);
-//     await a.loadCSV('../dataset/superstore.csv');
-    
-//     a.createScales();
-//     a.createAxis();
-//     a.renderCircles();
-//   }
-  
-//   main();
