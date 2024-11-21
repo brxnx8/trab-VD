@@ -180,7 +180,8 @@ class SuperstoreAnalisys {
             .attr("width", this.xScale.bandwidth())
             .attr("height", this.yScale.bandwidth())
             .style("fill", d => this.colorScale(d.quantity))
-            .style("stroke", "none")
+            .style("stroke", 'black')
+            .style("stroke-width", 0.02)
             .on("mousemove", function(event, data) {
                 d3.select(this).style("stroke", "black").style("stroke-width", 2);
                 const [posX,posY] = [event.pageX,event.pageY];
@@ -190,7 +191,10 @@ class SuperstoreAnalisys {
             })
             .on("mouseout", function() {
 
-                d3.select(this).style("stroke", "none")
+                d3.select(this)
+                    .style("stroke", "black")
+                    .style("stroke-width", 0.05);
+
                 d3.select("#tooltip").attr('style', 'visibility: hidden;');
  
             })
@@ -221,6 +225,7 @@ class SuperstoreAnalisys {
                 .selectAll()
                 .data(this.bars)
                 .join("text")
+                .attr("class", "bars-text")
                 .attr("x", (d) => this.xScale(d.sum)+this.config.left)
                 .attr("y", (d) => this.yScale(d.label) + this.config.top)
                 .attr("dy", +22)
@@ -274,14 +279,14 @@ class SuperstoreAnalisys {
         .attr("text-anchor", "start")
         .attr("class", "label")
         .attr("x", this.config.width/2)
-        .attr("y", this.config.height + this.config.bottom)
+        .attr("y", this.config.height + this.config.bottom - 2)
         .text(labelx);
 
         this.margins.append("text")
         .attr("text-anchor", "end")
         .attr("class", "label")
         .attr("x", -1*this.config.height/2)
-        .attr("y", 0)
+        .attr("y", 3)
         .attr("transform", "rotate(-90)")
         .text(labely);
     }
@@ -416,14 +421,15 @@ async function main() {
     await repository.loadData(data_path);
     
     let config = {div: '#main', width: 700, height: 600, top: 60, left: 80, bottom: 60, right: 80};
-    let appBars = new SuperstoreAnalisys(config, "bars");
+
+    let appBars = new SuperstoreAnalisys(config);
     appBars.createBars(repository.aggregation(repository.superstores, "Region", "", "%"), "sum");
     appBars.createScales(appBars.bars, "sum", "bars");
     appBars.createAxis('%');
     appBars.barsRender();
 
 
-    let appCircles = new SuperstoreAnalisys(config, "circles");
+    let appCircles = new SuperstoreAnalisys(config);
     appCircles.createCircles(repository.superstores);
     appCircles.createScales(appCircles.circles, "cx", "cy");
     appCircles.createAxis();
@@ -451,7 +457,7 @@ async function main() {
         return `${dateString[2]}.${month[Number(dateString[1])]}`
     }
     
-    let appMap = new SuperstoreAnalisys(config, "map");
+    let appMap = new SuperstoreAnalisys(config);
     appMap.createBarsMap(repository.aggregation(repository.superstores, "OrderDate", "", "normal", dateFunction), 'sum')
     appMap.createScales(appMap.barsMap, "year", 'map');
     appMap.createAxis()
