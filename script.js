@@ -242,22 +242,42 @@ class SuperstoreAnalisys {
         this.svg.selectAll('circle')
                     .data(this.circles)
                     .join('circle')
+                    .attr("class", "circle-dispersao")
                     .attr('cx', d => this.xScale(d.cx)+this.config.left)
                     .attr('cy', d => this.yScale(d.cy)+this.config.top)
                     .attr('r' , d => d.r)
                     // .attr('fill', d => this.colScale(d.col));
                     .attr('fill', 'steelblue')
                     .on("mousemove", function(event, data) {
+                        
+                        
+                        d3.select(this).attr("class", "this-circle")
+                        .style("stroke-width", 3)
+                        .style("stroke", "black")
+                        .attr('r' , data.r + 1.5);
+                        
+                        // d3.selectAll(".circle-dispersao").style("opacity", "0.4");
+                        
                         let color = data.cy > 0 ? "green" : "red"
+
                         const [posX,posY] = [event.pageX,event.pageY];
+                        
                         d3.select("#tooltip")
-                            .attr('style',`left:${posX}px; top:${posY}px; visibility: visible; opacity: 0.8`)
+                            .attr('style',`left:${posX+120}px; top:${posY}px; visibility: visible;`)
                             .html(`ID: ${data.id}<br/><strong>Venda: ${data.cx}</strong>
                                 <br/><strong class='${color}' >Lucro: ${data.cy}</strong>`)                    
                     })
-                    .on("mouseout", function() {
-        
+                    .on("mouseout", function(e, data) {
+
                         d3.select("#tooltip").attr('style', 'visibility: hidden;');
+                        
+                        // d3.selectAll(".circle-dispersao").style("opacity", "1");
+
+                        d3.select(this).attr("class", "circle-dispersao")
+                            .style("stroke-width", 0.7)
+                            .style("stroke", "rgb(62, 62, 62)")
+                            .attr('r' , data.r);
+
          
                     });
         
